@@ -124,7 +124,7 @@ and it MUST be present in all objects
 |-------|--------------------------------------|
 
 
-### Video H264 in AVCC metadata header extension (header extension type = 0x0B)
+### Video H264 in AVCC metadata header extension (header extension type = 0x15)
 
 It provides video metadata useful to consume the video carried in the payload of
 the object. The following table specifies the data inside this extesion header.
@@ -350,7 +350,7 @@ It will be 0 if not set
   0x0A (Header type: Media type header type)(i)
   0x00 (header value: Media type)(i)
 
-  0x0B (Header type: H264 in AVCC metadata)(i)
+  0x15 (Header type: H264 in AVCC metadata)(i)
   0x0D (Header value length)(i)
   0x00 (Header value: Seq ID)(i)
   0x00 (Header value: PTS Timestamp)(i)
@@ -377,7 +377,7 @@ It will be 0 if not set
   0x0A (Header type: Media type header type)(i)
   0x00 (header value: Media type)(i)
 
-  0x0B (Header type: H264 in AVCC metadata)(i)
+  0x15 (Header type: H264 in AVCC metadata)(i)
   0x0D (Header value length)(i)
   0x01 (Header value: Seq ID)(i)
   0x00 (Header value: PTS Timestamp)(i)
