@@ -8,7 +8,7 @@ submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
 consensus: true
-v: 3
+v: 4
 area: "Web and Internet Transport"
 workgroup: "Media Over QUIC"
 keyword:
@@ -32,6 +32,11 @@ author:
     organization: Meta
     email: afrind@meta.com
 
+ -
+    fullname: Paul Gregoire
+    organization: Red5
+    email: paul@red5.net
+
 normative:
 
 informative:
@@ -46,7 +51,8 @@ QUIC Transport [MOQT], using LOC[loc] packaging.
 # Introduction
 
 This protocol specifies a simple mechanism for sending media (video and audio)
-over LOC[loc] for both live-streaming and video conference (VC) style use cases.
+over LOC[loc] for both live-streaming and video conference (VC) style use
+cases.
 
 moq-mi allows updating encoding parameters in the middle of a track (ex: frame
 rate, resolution, codec, etc)
@@ -74,10 +80,15 @@ same timeline).
 
 For the video track, the publisher begins a new group at the start of each IDR
 (so object 0 will be always an IDR Keyframe), and each group contains a single
-subgroup.  Each object has the format described in {{object-format}}.
+subgroup. Each object has the format described in {{object-format}}. This
+applies to both H.264 and H.265 video tracks.
+
+For HEVC/H.265, the same group/object mapping applies. A new group begins at
+each IDR or CRA (Clean Random Access) picture, and object 0 within each group
+is always a random access point.
 
 For the audio track, the publisher begins a new group with each audio object,
-and each group contains a single subgroup.  Each object has the format described
+and each group contains a single subgroup. Each object has the format described
 in {{object-format}}.
 
 TODO: Datagram forwarding preference could be used, but has problems if audio
@@ -99,30 +110,23 @@ PTS = 11, timebase = 30
 
 PTS(s) = 11/30 = 0.366666s
 
-
 ## Object Format
 
-MoQ-MI uses MOQT extension headers to provide metadata that identifies
-and augemts the media information found in the object payload.
-
+MoQ-MI uses MOQT extension headers to provide metadata that identifies and
+augemts the media information found in the object payload.
 
 ### Media type header extension (header extension type = 0x0A)
 
 It defines the media type inside object payload (see section IANA in MOQ TODO),
 and it MUST be present in all objects
 
-|-------|--------------------------------------|
-| Value | Media type                           |
-|------:|:-------------------------------------|
-| 0x0   | Video H264 in AVCC                   |
-|-------|--------------------------------------|
-| 0x1   | Audio Opus bitsream                  |
-|-------|--------------------------------------|
-| 0x2   | UTF-8 text                           |
-|-------|--------------------------------------|
-| 0x3   | Audio AAC-LC in MPEG4                |
-|-------|--------------------------------------|
-
+| Value | Media type |
+|------:|:-----------|
+| 0x0 | Video H264 in AVCC |
+| 0x1 | Audio Opus bitsream |
+| 0x2 | UTF-8 text |
+| 0x3 | Audio AAC-LC in MPEG4 |
+| 0x4 | Video H265 in HVCC |
 
 ### Video H264 in AVCC metadata header extension (header extension type = 0x15)
 
@@ -144,11 +148,9 @@ the object. The following table specifies the data inside this extesion header.
 It MUST be present in all objects where "media type header extension" is equal
 to "Video H264 in AVCC"(0x0)
 
-
 #### Seq ID
 
 Monotonically increasing counter for this media track
-
 
 #### PTS Timestamp
 
@@ -157,7 +159,6 @@ Indicates PTS in timebase
 TODO: Varint does NOT accept easily negative, so it could be challenging to
 encode at start (priming)
 
-
 #### DTS Timestamp
 
 Not needed if B frames are NOT used, in that case should be same value as PTS.
@@ -165,23 +166,19 @@ Not needed if B frames are NOT used, in that case should be same value as PTS.
 TODO: Varint does NOT accept easily negative, so it could be challenging to
 encode at start (priming)
 
-
 #### Timebase
 
 Units used in PTS, DTS, and duration.
-
 
 #### Duration
 
 Duration in timebase.
 It will be 0 if not set
 
-
 #### Wall Clock
 
 EPOCH time in ms when this frame started being captured.
 It will be 0 if not set
-
 
 ### Video H264 in AVCC extradata header extension (Header extension type = 0x0D)
 
@@ -198,14 +195,12 @@ the encoding paramets (or very start of the stream)
 ~~~
 {: #media-object-header-0d-video-h264-avcc format title="MOQT Media video h264 extradata header extension"}
 
-
 #### Extradata
 
-This will be  `AVCDecoderConfigurationRecord` as described in
+This will be `AVCDecoderConfigurationRecord` as described in
 [ISO14496-15:2019] section 5.3.3.1, with field `lengthSizeMinusOne` = 3
-(So length = 4). If any other size length is indicated
-(in `AVCDecoderConfigurationRecord`) we should error with “Protocol violation”
-
+(So length = 4). If any other size length is indicated (in
+`AVCDecoderConfigurationRecord`) we should error with "Protocol violation"
 
 ### Audio Opus bitsream data header extension (Header extension type = 0x0F)
 
@@ -239,33 +234,27 @@ Indicates PTS in timebase
 TODO: Varint does NOT accept easily negative, so it could be challenging to
 encode at start (priming)
 
-
 #### Timebase
 
 Units used in PTS, DTS, and duration
-
 
 #### Sample Freq
 
 Sample frequency used in the original signal (before encoding)
 
-
 #### Num Channels
 
 Number of channels in the original signal (before encoding)
-
 
 #### Duration
 
 Duration in timebase.
 It will be 0 if not set
 
-
 #### Wallclock
 
 EPOCH time in ms when this frame started being captured.
 It will be 0 if not set
-
 
 ### UTF-8 Text header extension (Header extension type = 0x11)
 
@@ -276,11 +265,9 @@ It will be 0 if not set
 ~~~
 {: #object-header-utf8-text format title="MOQT UTF-8 Text header extension"}
 
-
 #### Seq Id
 
 Monotonically increasing counter for this track
-
 
 ### Audio AAC-LC in MPEG4 bitstream data header extension (Header extension type = 0x13)
 
@@ -297,11 +284,9 @@ Monotonically increasing counter for this track
 ~~~
 {: #media-object-header-audio-aaclcmpeg4 format title="MOQT Media audio AAC-LC MPEG4 object header"}
 
-
 #### Seq Id
 
 Monotonically increasing counter for this media track
-
 
 #### PTS Timestamp
 
@@ -310,32 +295,110 @@ Indicates PTS in timebase
 TODO: Varint does NOT accept easily negative, so it could be challenging to
 encode at start (priming)
 
-
 #### Timebase
 
 Units used in PTS, DTS, and duration
-
 
 #### Sample Freq
 
 Sample frequency used in the original signal (before encoding)
 
-
 #### Num Channels
 
 Number of channels in the original signal (before encoding)
-
 
 #### Duration
 
 Duration in timebase.
 It will be 0 if not set
 
-
 #### Wallclock
 
 EPOCH time in ms when this frame started being captured.
 It will be 0 if not set
+
+### Video H265 in HVCC metadata header extension (header extension type = 0x17)
+
+It provides video metadata useful to consume the H.265/HEVC video carried in
+the payload of the object. The following table specifies the data inside this
+extension header.
+
+~~~
+{
+  Seq ID (i)
+  PTS Timestamp (i)
+  DTS Timestamp (i)
+  Timebase (i)
+  Duration (i)
+  Wallclock (i)
+}
+~~~
+{: #media-object-header-video-h265-hvcc format title="MOQT Media video H265 in HVCC metadata header extension"}
+
+It MUST be present in all objects where "media type header extension" is equal
+to "Video H265 in HVCC"(0x4)
+
+#### Seq ID
+
+Monotonically increasing counter for this media track
+
+#### PTS Timestamp
+
+Indicates PTS in timebase
+
+TODO: Varint does NOT accept easily negative, so it could be challenging to
+encode at start (priming)
+
+#### DTS Timestamp
+
+Not needed if B frames are NOT used, in that case should be same value as PTS.
+
+Note: HEVC supports B-frame prediction structures (including generalized
+B-frames and temporal sub-layers). When B-frames are present, DTS will differ
+from PTS and both values MUST be set correctly.
+
+TODO: Varint does NOT accept easily negative, so it could be challenging to
+encode at start (priming)
+
+#### Timebase
+
+Units used in PTS, DTS, and duration.
+
+#### Duration
+
+Duration in timebase.
+It will be 0 if not set
+
+#### Wall Clock
+
+EPOCH time in ms when this frame started being captured.
+It will be 0 if not set
+
+### Video H265 in HVCC extradata header extension (Header extension type = 0x19)
+
+Provides extradata (decoder configuration) needed to start decoding the
+H.265/HEVC video stream.
+
+It MUST be present in object 0 (start of group) where "media type header
+extension" is equal to "Video H265 in HVCC"(0x4) AND there has been an update
+on the encoding parameters (or very start of the stream).
+
+~~~
+{
+  Extradata (..)
+}
+~~~
+{: #media-object-header-video-h265-extradata format title="MOQT Media video H265 in HVCC extradata header extension"}
+
+#### Extradata
+
+This MUST be `HEVCDecoderConfigurationRecord` as described in [ISO14496-15]
+section 8.3.3.1.2, with field `lengthSizeMinusOne` = 3 (So length = 4). If any
+other size length is indicated (in `HEVCDecoderConfigurationRecord`) we should
+error with "Protocol violation".
+
+The `HEVCDecoderConfigurationRecord` contains the VPS, SPS, and PPS NAL units
+required to initialize the HEVC decoder.
 
 # Examples
 
@@ -391,7 +454,6 @@ It will be 0 if not set
 }
 ~~~
 
-
 ### MOQT Object DATAGRAM fields in case it carries Audio AAC-LC in MPEG4
 
 ~~~
@@ -419,54 +481,169 @@ It will be 0 if not set
 }
 ~~~
 
+## Example of first object for Video H265 in HVCC
+
+### MOQT Object subgroup fields in case it carries Video H265 in HVCC, 1st frame sent
+
+~~~
+{
+  0x00 (Object ID)(i),
+  0x03 (Extension Count)(i),
+  0x0A (Header type: Media type header type)(i)
+  0x04 (header value: Media type = Video H265 in HVCC)(i)
+
+  0x17 (Header type: H265 in HVCC metadata)(i)
+  0x0D (Header value length)(i)
+  0x00 (Header value: Seq ID)(i)
+  0x00 (Header value: PTS Timestamp)(i)
+  0x00 (Header value: DTS Timestamp)(i)
+  0x1E (Header value: Timebase)(i)
+  0x01 (Header value: Duration)(i)
+  0xC0, 0x00, 0x01, 0x95, 0x45, 0x6C, 0x8B, 0xFF (Header value: Wallclock)(i)
+
+  0x19 (Header type: H265 in HVCC extradata)(i)
+  Header value length (i)
+  Header value: H265 in HVCC extradata (HEVCDecoderConfigurationRecord) (..)
+
+  Object Payload Length (i),
+  Object Payload bytes (..),
+}
+~~~
+
+### MOQT Object subgroup fields in case it carries Video H265 in HVCC, 2nd or bigger frame with NO encoding settings update
+
+~~~
+{
+  0x01 (Object ID)(i),
+  0x02 (Extension Count)(i),
+  0x0A (Header type: Media type header type)(i)
+  0x04 (header value: Media type = Video H265 in HVCC)(i)
+
+  0x17 (Header type: H265 in HVCC metadata)(i)
+  0x0D (Header value length)(i)
+  0x01 (Header value: Seq ID)(i)
+  0x00 (Header value: PTS Timestamp)(i)
+  0x00 (Header value: DTS Timestamp)(i)
+  0x1E (Header value: Timebase)(i)
+  0x01 (Header value: Duration)(i)
+  0xC0, 0x00, 0x01, 0x95, 0x45, 0x6C, 0x3B, 0xE0 (Header value: Wallclock)(i)
+
+  Object Payload Length (i),
+  Object Payload bytes (..),
+}
+~~~
+
 # Payloads
 
 TODO: This sections needs to be updated with links to LOC
 
 ## For object header media type = Video H264 in AVCC (0x00)
 
-Payload MUST be H264 with bitstream AVC1 format as described in [ISO14496-15:2019] section 5.3.
-Using 4 bytes size field length.
-
+Payload MUST be H264 with bitstream AVC1 format as described in
+[ISO14496-15:2019] section 5.3. Using 4 bytes size field length.
 
 ## For object header media type = Audio Opus bitsream (0x01)
 
 Payload MUST be Opus packets, as described in {{!RFC6716}} - section 3
 
-
 ## For object header media type = UTF-8 text (0x02)
 
 Payload MUST be text bytes in UTF-8, as described in {{!RFC3629}}
 
-
 ## For object header media type = Audio AAC-LC in MPEG4 (0x03)
 
-Payload MUST be AAC frame (syntax element `raw_data_block()`), as described in section 4.4.2.1 of [ISO14496-3:2009].
+Payload MUST be AAC frame (syntax element `raw_data_block()`), as described in
+section 4.4.2.1 of [ISO14496-3:2009].
 
+## For object header media type = Video H265 in HVCC (0x04)
+
+Payload MUST be H.265/HEVC with bitstream HVC1 format as described in
+[ISO14496-15] section 8.3. Using 4 bytes size field length, as indicated by
+`lengthSizeMinusOne = 3` in the `HEVCDecoderConfigurationRecord`.
+
+Each payload contains one or more HEVC NAL units prefixed with a 4-byte length
+field. The NAL unit types follow [ISO23008-2]:
+
+- IDR_W_RADL (19), IDR_N_LP (20): Instantaneous Decode Refresh
+- CRA_NUT (21): Clean Random Access
+- TRAIL_N (0), TRAIL_R (1): Trailing pictures
+- TSA_N (2), TSA_R (3): Temporal Sub-layer Access
+- STSA_N (4), STSA_R (5): Step-wise Temporal Sub-layer Access
+- BLA_W_LP (16), BLA_W_RADL (17), BLA_N_LP (18): Broken Link Access
 
 # References
 
-[ISO14496-15:2019] "Carriage of network abstraction layer (NAL) unit
-structured video in the ISO base media file format", ISO ISO14496-15:2019,
-International Organization for Standardization, October, 2022.
+[ISO14496-15:2019] "Carriage of network abstraction layer (NAL) unit structured
+video in the ISO base media file format", ISO ISO14496-15:2019, International
+Organization for Standardization, October, 2022.
+Note: Section 5.3 defines AVC (H.264) sample format and
+AVCDecoderConfigurationRecord. Section 8.3 defines HEVC (H.265) sample format
+and HEVCDecoderConfigurationRecord.
 
-[ISO14496-3:2009] "Information technology — Coding of audio-visual objects",
-ISO ISO14496-3:2009, International Organization for Standardization, September, 2009.
+[ISO14496-3:2009] "Information technology - Coding of audio-visual objects",
+ISO ISO14496-3:2009, International Organization for Standardization, September,
+2009.
+
+[ISO23008-2:2020] "Information technology - High efficiency coding and media
+delivery in heterogeneous environments - Part 2: High efficiency video coding",
+ISO/IEC 23008-2:2020 (also published as ITU-T H.265), International
+Organization for Standardization, June, 2020.
+Note: Defines the HEVC video coding standard including NAL unit types, picture
+types (IDR, CRA, BLA, TSA, STSA), and temporal sub-layer structures referenced
+in Section 4.5.
 
 # Conventions and Definitions
 
-{::boilerplate bcp14-tagged}
-
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when,
+and only when, they appear in all capitals, as shown here.
 
 # Security Considerations
 
 TODO Security
 
-
 # IANA Considerations
 
 This document has no IANA actions.
 
+# Normative References
+
+[RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement
+Levels", BCP 14, RFC 2119, DOI 10.17487/RFC2119, March 1997,
+<https://www.rfc-editor.org/rfc/rfc2119>.
+
+[RFC3629] Yergeau, F., "UTF-8, a transformation format of ISO 10646", STD 63,
+RFC 3629, DOI 10.17487/RFC3629, November 2003,
+<https://www.rfc-editor.org/rfc/rfc3629>.
+
+[RFC6716] Valin, JM., Vos, K., and T. Terriberry, "Definition of the Opus Audio
+Codec", RFC 6716, DOI 10.17487/RFC6716, September 2012,
+<https://www.rfc-editor.org/rfc/rfc6716>.
+
+[RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key
+Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174, May 2017,
+<https://www.rfc-editor.org/rfc/rfc8174>.
+
+[ISO14496-15] ISO, "Information technology - Coding of audio-visual objects -
+Part 15: Carriage of network abstraction layer (NAL) unit structured video in
+the ISO base media file format", ISO/IEC 14496-15:2019, International
+Organization for Standardization, 2019, <https://www.iso.org/standard/74429.html>.
+Sections referenced:
+- 5.3.3.1: AVCDecoderConfigurationRecord (H.264/AVC)
+- 8.3.3.1.2: HEVCDecoderConfigurationRecord (H.265/HEVC)
+
+[ISO23008-2] ITU-T and ISO/IEC, "High efficiency video coding", ITU-T
+Recommendation H.265 | ISO/IEC 23008-2:2020, International Telecommunication
+Union and International Organization for Standardization, June 2020,
+<https://www.itu.int/rec/T-REC-H.265>.
+Defines the HEVC codec and NAL unit structure used in Section 4.5 payload
+format.
+
+[ISO14496-3] ISO, "Information technology - Coding of audio-visual objects -
+Part 3: Audio", ISO/IEC 14496-3:2009, International Organization for
+Standardization, 2009, <https://www.iso.org/standard/53943.html>.
+Section 4.4.2.1: AAC `raw_data_block()` syntax.
 
 --- back
 
@@ -474,3 +651,22 @@ This document has no IANA actions.
 {:numbered="false"}
 
 TODO acknowledge.
+
+# Extension Summary
+{:numbered="false"}
+
+The following table summarizes all header extension types:
+
+| Extension ID | Name | Value Format |
+|:-------------|:-----|:-------------|
+| 0x0A (even) | Media Type | Varint |
+| 0x0D (odd) | H264 Extradata (AVCC) | Byte array (length) |
+| 0x0F (odd) | Opus Audio Data | Byte array (length) |
+| 0x11 (odd) | UTF-8 Text | Byte array (length) |
+| 0x13 (odd) | AAC-LC Audio Data | Byte array (length) |
+| 0x15 (odd) | H264 Metadata (AVCC) | Byte array (length) |
+| 0x17 (odd) | H265 Metadata (HVCC) | Byte array (length) |
+| 0x19 (odd) | H265 Extradata (HVCC) | Byte array (length) |
+
+Even extension IDs carry a varint value directly. Odd extension IDs carry a
+varint length followed by that many bytes.
