@@ -604,44 +604,6 @@ TODO Security
 
 This document has no IANA actions.
 
-# Normative References
-
-[RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement
-Levels", BCP 14, RFC 2119, DOI 10.17487/RFC2119, March 1997,
-<https://www.rfc-editor.org/rfc/rfc2119>.
-
-[RFC3629] Yergeau, F., "UTF-8, a transformation format of ISO 10646", STD 63,
-RFC 3629, DOI 10.17487/RFC3629, November 2003,
-<https://www.rfc-editor.org/rfc/rfc3629>.
-
-[RFC6716] Valin, JM., Vos, K., and T. Terriberry, "Definition of the Opus Audio
-Codec", RFC 6716, DOI 10.17487/RFC6716, September 2012,
-<https://www.rfc-editor.org/rfc/rfc6716>.
-
-[RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key
-Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174, May 2017,
-<https://www.rfc-editor.org/rfc/rfc8174>.
-
-[ISO14496-15] ISO, "Information technology - Coding of audio-visual objects -
-Part 15: Carriage of network abstraction layer (NAL) unit structured video in
-the ISO base media file format", ISO/IEC 14496-15:2019, International
-Organization for Standardization, 2019, <https://www.iso.org/standard/74429.html>.
-Sections referenced:
-- 5.3.3.1: AVCDecoderConfigurationRecord (H.264/AVC)
-- 8.3.3.1.2: HEVCDecoderConfigurationRecord (H.265/HEVC)
-
-[ISO23008-2] ITU-T and ISO/IEC, "High efficiency video coding", ITU-T
-Recommendation H.265 | ISO/IEC 23008-2:2020, International Telecommunication
-Union and International Organization for Standardization, June 2020,
-<https://www.itu.int/rec/T-REC-H.265>.
-Defines the HEVC codec and NAL unit structure used in Section 4.5 payload
-format.
-
-[ISO14496-3] ISO, "Information technology - Coding of audio-visual objects -
-Part 3: Audio", ISO/IEC 14496-3:2009, International Organization for
-Standardization, 2009, <https://www.iso.org/standard/53943.html>.
-Section 4.4.2.1: AAC `raw_data_block()` syntax.
-
 --- back
 
 # Acknowledgments
